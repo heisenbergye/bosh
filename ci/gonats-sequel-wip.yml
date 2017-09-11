@@ -1,0 +1,306 @@
+groups: []
+resources:
+- name: bosh-cli
+  type: s3
+  source:
+    bucket: bosh-cli-alpha-artifacts
+    regexp: alpha-bosh-cli-(.*)-linux-amd64
+    region_name: us-east-1
+- name: keep-me-running
+  type: time
+  source:
+    interval: 40m
+- name: tls-bosh-agent
+  type: git
+  source:
+    branch: tls-nats
+    uri: https://github.com/cloudfoundry/bosh-agent
+- name: bosh-src
+  type: git
+  source:
+    branch: gonats-the-sequel
+    uri: https://github.com/cloudfoundry/bosh.git
+- name: bosh-src-stress-test-debug
+  type: git
+  source:
+    branch: gonats-the-sequel-stress-test-debug
+    uri: https://github.com/cloudfoundry/bosh.git
+- name: non-tls-bosh-agent
+  type: git
+  source:
+    branch: master
+    uri: https://github.com/cloudfoundry/bosh-agent
+resource_types: []
+jobs:
+- name: unit-2.3
+  public: true
+  serial: true
+  build_logs_to_retain: 250
+  plan:
+  - get: bosh-src
+    trigger: true
+  - task: test
+    file: bosh-src/ci/tasks/test-unit.yml
+    params:
+      DB: sqlite
+      RUBY_VERSION: 2.3.1
+- name: tls-integration-postgres-gocli-sha2
+  public: true
+  serial: true
+  build_logs_to_retain: 250
+  plan:
+  - aggregate:
+    - get: bosh-src
+      trigger: true
+    - get: bosh-cli
+    - get: tls-bosh-agent
+      trigger: true
+    - get: keep-me-running
+      trigger: true
+  - aggregate:
+    - task: test-group-1
+      privileged: true
+      file: bosh-src/ci/tasks/test-integration-gocli.yml
+      params:
+        DB: postgresql
+        GROUP: 1,4,7,10,13,16,19,22
+        NUM_GROUPS: 24
+        RUBY_VERSION: 2.3.1
+        SHA2_MODE: true
+      input_mapping:
+        bosh-agent: tls-bosh-agent
+      tags:
+      - worker-gonats
+    - task: test-group-2
+      privileged: true
+      file: bosh-src/ci/tasks/test-integration-gocli.yml
+      params:
+        DB: postgresql
+        GROUP: 2,5,8,11,14,17,20,23
+        NUM_GROUPS: 24
+        RUBY_VERSION: 2.3.1
+        SHA2_MODE: true
+      input_mapping:
+        bosh-agent: tls-bosh-agent
+      tags:
+      - worker-gonats
+    - task: test-group-3
+      privileged: true
+      file: bosh-src/ci/tasks/test-integration-gocli.yml
+      params:
+        DB: postgresql
+        GROUP: 3,6,9,12,15,18,21,24
+        NUM_GROUPS: 24
+        RUBY_VERSION: 2.3.1
+        SHA2_MODE: true
+      input_mapping:
+        bosh-agent: tls-bosh-agent
+      tags:
+      - worker-gonats
+- name: stress-test-tls-integration-mysql-gocli-sha2
+  public: true
+  serial: true
+  build_logs_to_retain: 250
+  plan:
+  - aggregate:
+    - get: bosh-src-stress-test-debug
+      trigger: true
+    - get: bosh-cli
+    - get: tls-bosh-agent
+      trigger: true
+    - get: keep-me-running
+      trigger: true
+  - aggregate:
+    - task: test-group-1
+      privileged: true
+      file: bosh-src-stress-test-debug/ci/tasks/test-integration-gocli-stress-test.yml
+      params:
+        DB: mysql
+        GROUP: 1,4,7,10,13,16,19,22
+        NUM_GROUPS: 24
+        RUBY_VERSION: 2.3.1
+        SHA2_MODE: true
+      input_mapping:
+        bosh-agent: tls-bosh-agent
+      tags:
+      - worker-gonats
+    - task: test-group-2
+      privileged: true
+      file: bosh-src-stress-test-debug/ci/tasks/test-integration-gocli-stress-test.yml
+      params:
+        DB: mysql
+        GROUP: 2,5,8,11,14,17,20,23
+        NUM_GROUPS: 24
+        RUBY_VERSION: 2.3.1
+        SHA2_MODE: true
+      input_mapping:
+        bosh-agent: tls-bosh-agent
+      tags:
+      - worker-gonats
+    - task: test-group-3
+      privileged: true
+      file: bosh-src-stress-test-debug/ci/tasks/test-integration-gocli-stress-test.yml
+      params:
+        DB: mysql
+        GROUP: 3,6,9,12,15,18,21,24
+        NUM_GROUPS: 24
+        RUBY_VERSION: 2.3.1
+        SHA2_MODE: true
+      input_mapping:
+        bosh-agent: tls-bosh-agent
+      tags:
+      - worker-gonats
+    - task: test-group-4
+      privileged: true
+      file: bosh-src-stress-test-debug/ci/tasks/test-integration-gocli-stress-test.yml
+      params:
+        DB: mysql
+        GROUP: 1,4,7,10,13,16,19,22
+        NUM_GROUPS: 24
+        RUBY_VERSION: 2.3.1
+        SHA2_MODE: true
+      input_mapping:
+        bosh-agent: tls-bosh-agent
+      tags:
+      - worker-gonats
+    - task: test-group-5
+      privileged: true
+      file: bosh-src-stress-test-debug/ci/tasks/test-integration-gocli-stress-test.yml
+      params:
+        DB: mysql
+        GROUP: 2,5,8,11,14,17,20,23
+        NUM_GROUPS: 24
+        RUBY_VERSION: 2.3.1
+        SHA2_MODE: true
+      input_mapping:
+        bosh-agent: tls-bosh-agent
+      tags:
+      - worker-gonats
+    - task: test-group-6
+      privileged: true
+      file: bosh-src-stress-test-debug/ci/tasks/test-integration-gocli-stress-test.yml
+      params:
+        DB: mysql
+        GROUP: 3,6,9,12,15,18,21,24
+        NUM_GROUPS: 24
+        RUBY_VERSION: 2.3.1
+        SHA2_MODE: true
+      input_mapping:
+        bosh-agent: tls-bosh-agent
+      tags:
+      - worker-gonats
+- name: non-tls-integration-postgres-gocli-sha2
+  public: true
+  serial: true
+  build_logs_to_retain: 250
+  plan:
+  - aggregate:
+    - get: bosh-src
+      trigger: true
+    - get: bosh-cli
+    - get: non-tls-bosh-agent
+      trigger: true
+    - get: keep-me-running
+      trigger: true
+  - aggregate:
+    - task: test-group-1
+      privileged: true
+      file: bosh-src/ci/tasks/test-integration-gocli.yml
+      params:
+        DB: postgresql
+        GROUP: 1,4,7,10,13,16,19,22
+        NUM_GROUPS: 24
+        RUBY_VERSION: 2.3.1
+        SHA2_MODE: true
+      input_mapping:
+        bosh-agent: non-tls-bosh-agent
+      tags:
+      - bosh-integration-4
+    - task: test-group-2
+      privileged: true
+      file: bosh-src/ci/tasks/test-integration-gocli.yml
+      params:
+        DB: postgresql
+        GROUP: 2,5,8,11,14,17,20,23
+        NUM_GROUPS: 24
+        RUBY_VERSION: 2.3.1
+        SHA2_MODE: true
+      input_mapping:
+        bosh-agent: non-tls-bosh-agent
+      tags:
+      - bosh-integration-5
+    - task: test-group-3
+      privileged: true
+      file: bosh-src/ci/tasks/test-integration-gocli.yml
+      params:
+        DB: postgresql
+        GROUP: 3,6,9,12,15,18,21,24
+        NUM_GROUPS: 24
+        RUBY_VERSION: 2.3.1
+        SHA2_MODE: true
+      input_mapping:
+        bosh-agent: non-tls-bosh-agent
+      tags:
+      - bosh-integration-6
+- name: aws-tls-integration-postgres-gocli-sha2
+  public: true
+  serial: true
+  build_logs_to_retain: 250
+  plan:
+  - aggregate:
+    - get: bosh-src
+      trigger: true
+    - get: bosh-cli
+    - get: tls-bosh-agent
+      trigger: true
+    - get: keep-me-running
+      trigger: true
+  - aggregate:
+    - task: test-group-1
+      privileged: true
+      file: bosh-src/ci/tasks/test-integration-gocli.yml
+      params:
+        DB: postgresql
+        GROUP: 1,4,7,10,13,16,19,22
+        NUM_GROUPS: 24
+        RUBY_VERSION: 2.3.1
+        SHA2_MODE: true
+      input_mapping:
+        bosh-agent: tls-bosh-agent
+      tags:
+      - worker-gonats-aws
+    - task: test-group-2
+      privileged: true
+      file: bosh-src/ci/tasks/test-integration-gocli.yml
+      params:
+        DB: postgresql
+        GROUP: 2,5,8,11,14,17,20,23
+        NUM_GROUPS: 24
+        RUBY_VERSION: 2.3.1
+        SHA2_MODE: true
+      input_mapping:
+        bosh-agent: tls-bosh-agent
+      tags:
+      - worker-gonats-aws
+    - task: test-group-3
+      privileged: true
+      file: bosh-src/ci/tasks/test-integration-gocli.yml
+      params:
+        DB: postgresql
+        GROUP: 3,6,9,12,15,18,21,24
+        NUM_GROUPS: 24
+        RUBY_VERSION: 2.3.1
+        SHA2_MODE: true
+      input_mapping:
+        bosh-agent: tls-bosh-agent
+      tags:
+      - worker-gonats-aws
+- name: agent-tls-unit
+  public: true
+  plan:
+  - get: tls-bosh-agent
+    trigger: true
+  - task: test-unit
+    file: tls-bosh-agent/ci/tasks/test-unit.yml
+    input_mapping:
+      bosh-agent: tls-bosh-agent
