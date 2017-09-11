@@ -496,7 +496,7 @@ module Bosh::Dev::Sandbox
       conf = File.join(sandbox_root, NATS_CONFIG)
 
       @nats_process = Service.new(
-        %W[#{gnatsd_path} -c #{conf} -T -D ],
+        %W[#{gnatsd_path} -c #{conf} -T -DV ],
         {stdout: $stdout, stderr: $stderr},
         @logger
       )

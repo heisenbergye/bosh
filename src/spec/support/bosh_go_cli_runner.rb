@@ -164,8 +164,9 @@ module Bosh::Spec
         #{DEBUG_HEADER} end #{title} #{DEBUG_HEADER}
       EOF
 
-      FileUtils.mkdir_p(File.dirname(@saved_logs_path))
-      File.open(@saved_logs_path, 'a') { |f| f.write(content) }
+      tmpdir_path = Dir.mktmpdir
+      @logger.info("#{title} debug logs live at #{tmpdir_path}")
+      File.open("#{tmpdir_path}/bosh_cli_runner_output_debug.log", 'a') { |f| f.write(content) }
 
       @logger.info(content)
     end
