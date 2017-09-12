@@ -23,7 +23,7 @@ module Bosh::Director
           'name' => 'another-errand',
           'template' => 'errand1',
           'lifecycle' => 'errand',
-          'resource_pool' => 'a',
+          'vm_type' => 'a',
           'instances' => 1,
           'networks' => [{'name' => 'a'}]
         }
@@ -123,11 +123,11 @@ module Bosh::Director
                 Models::Config.make(:cloud_with_manifest)
                 Models::Config.make(type: 'runtime')
 
-                deployment_context = [['context', JSON.dump({'cloud_config_id' => 1, 'runtime_config_ids' => [runtime_config_1.id, runtime_config_2.id]})]]
+                deployment_context = [['context', JSON.dump({'cloud_config_ids' => [cloud_config.id], 'runtime_config_ids' => [runtime_config_1.id, runtime_config_2.id]})]]
 
                 allow_any_instance_of(DeploymentManager)
                   .to receive(:create_deployment)
-                  .with(anything, anything, cloud_config, [runtime_config_1, runtime_config_2], anything, anything, anything)
+                  .with(anything, anything, [cloud_config], [runtime_config_1, runtime_config_2], anything, anything, anything)
                   .and_return(Models::Task.make)
 
                 post "/?#{URI.encode_www_form(deployment_context)}", spec_asset('test_conf.yaml'), {'CONTENT_TYPE' => 'text/yaml'}
@@ -145,7 +145,7 @@ module Bosh::Director
 
                 expect_redirect_to_queued_task(last_response)
                 deployment = Models::Deployment.first
-                expect(deployment.cloud_config).to eq(cloud_config)
+                expect(deployment.cloud_configs).to contain_exactly(cloud_config)
                 expect(deployment.runtime_configs).to contain_exactly(runtime_config)
               end
             end
@@ -1322,7 +1322,7 @@ module Bosh::Director
                 'name' => 'service_errand_job',
                 'template' => 'job_with_bin_run',
                 'lifecycle' => 'service',
-                'resource_pool' => 'a',
+                'vm_type' => 'a',
                 'instances' => 1,
                 'networks' => [{'name' => 'a'}]
               }
@@ -1510,7 +1510,7 @@ module Bosh::Director
 
             it 'returns diff with resolved aliases' do
               perform
-              expect(last_response.body).to eq('{"context":{"cloud_config_id":4,"runtime_config_ids":[2,3]},"diff":[["jobs: []","removed"],["",null],["name: fake-dep-name","added"]]}')
+              expect(last_response.body).to eq('{"context":{"cloud_config_ids":[4],"runtime_config_ids":[2,3]},"diff":[["jobs: []","removed"],["",null],["name: fake-dep-name","added"]]}')
             end
 
             it 'gives a nice error when request body is not a valid yml' do
@@ -1640,8 +1640,8 @@ module Bosh::Director
 
         let(:dev_team) { Models::Team.create(:name => 'dev') }
         let(:other_team) { Models::Team.create(:name => 'other') }
-        let!(:owned_deployment) { Models::Deployment.create_with_teams(:name => 'owned_deployment', teams: [dev_team], manifest: manifest_with_errand('owned_deployment'), cloud_config: cloud_config) }
-        let!(:other_deployment) { Models::Deployment.create_with_teams(:name => 'other_deployment', teams: [other_team], manifest: manifest_with_errand('other_deployment'), cloud_config: cloud_config) }
+        let!(:owned_deployment) { Models::Deployment.create_with_teams(:name => 'owned_deployment', teams: [dev_team], manifest: manifest_with_errand('owned_deployment'), cloud_configs: [cloud_config]) }
+        let!(:other_deployment) { Models::Deployment.create_with_teams(:name => 'other_deployment', teams: [other_team], manifest: manifest_with_errand('other_deployment'), cloud_configs: [cloud_config]) }
         describe 'when a user has dev team admin membership' do
 
           before {
@@ -1948,7 +1948,8 @@ module Bosh::Director
 
           context 'GET /:deployment/errands' do
             it 'allows access to owned deployment' do
-              expect(get('/owned_deployment/errands').status).to eq(200)
+              response = get('/owned_deployment/errands')
+              expect(response.status).to eq(200)
             end
 
             it 'denies access to other deployment' do

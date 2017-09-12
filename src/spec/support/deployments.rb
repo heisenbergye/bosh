@@ -15,7 +15,7 @@ module Bosh::Spec
           'cloud_properties' => {},
         },
 
-        'resource_pools' => [],
+        'vm_types' => [],
       }
     end
 
@@ -131,12 +131,12 @@ module Bosh::Spec
     def self.simple_cloud_config
       minimal_cloud_config.merge({
           'networks' => [network],
-          'resource_pools' => [resource_pool]
+          'vm_types' => [vm_type]
         })
     end
 
     def self.simple_os_specific_cloud_config
-      resource_pools = [
+      vm_types = [
         {
           'name' => 'a',
           'size' => 1,
@@ -160,7 +160,7 @@ module Bosh::Spec
       ]
       minimal_cloud_config.merge({
         'networks' => [network],
-        'resource_pools' => resource_pools,
+        'vm_types' => vm_types,
       })
     end
 
@@ -176,7 +176,7 @@ module Bosh::Spec
             'subnets' => [subnet],
           }
         ],
-        'resource_pools' => [resource_pool]
+        'vm_types' => [vm_type]
       })
     end
 
@@ -219,7 +219,7 @@ module Bosh::Spec
       ]
       minimal_cloud_config.merge({
                                      'networks' => networks,
-                                     'resource_pools' => [resource_pool],
+                                     'vm_types' => [vm_type],
                                      'azs' => azs,
                                      'compilation' => {
                                          'workers' => 1,
@@ -524,7 +524,7 @@ module Bosh::Spec
       })
     end
 
-    def self.resource_pool
+    def self.vm_type
       {
         'name' => 'a',
         'cloud_properties' => {},
@@ -960,7 +960,7 @@ module Bosh::Spec
           }
         ],
         'lifecycle' => 'errand',
-        'resource_pool' => 'a',
+        'vm_type' => 'a',
         'instances' => 1,
         'networks' => [{'name' => 'a'}],
         'properties' => {
